@@ -75,7 +75,7 @@ I started by reading in all the `vehicle` and `non-vehicle` images.  Here is an 
 
 I then explored different color spaces and different `skimage.hog()` parameters (`orientations`, `pixels_per_cell`, and `cells_per_block`).  I grabbed random images from each of the two classes and displayed them to get a feel for what the `skimage.hog()` output looks like.
 
-Here is an example where I varied the color space -> `RGB`, `LUV`, `YCrCb`, `HLS`, YUV` while keeping the HOG parameters of `orientations=8`, `pixels_per_cell=(8, 8)` and `cells_per_block=(2, 2)` constant:
+Here is an example where I varied the color space -> `RGB`, `LUV`, `YCrCb`, `HLS`, `YUV` while keeping the HOG parameters of `orientations=8`, `pixels_per_cell=(8, 8)` and `cells_per_block=(2, 2)` constant:
 
 ![alt text][hog_colorspace_comparision]
 
@@ -117,7 +117,7 @@ For histogram of colors, I compared the histogram for [RGB, HSV, LUV, YCrCb, HLS
 
 I realized majority of the false positives were coming from shadows or dimly lit areas, hence I augmented the training data by adding random amount of brightness adjustments to the image. The code is in cell 3 of the notebook, function adjust_brightness(). Indeed, the classifier was giving less false positives after augmentation, but it took much longer in terms of training and classification time.
 
-[!alt text][augment_brightness_comparision]
+![alt text][augment_brightness_comparision]
 
 Another optimization i did was to apply histogram equalization on the image. The code is in cell 4, function equalize_hist() under heading "Preprocessing". Since the SVM does not perform well on dimly lit images as the features of the image are not discernible, we can use histogram equalization to increase contrast and bring out the shapes, edges, etc. that will help the SVM make its decision. Performing this technique on the patch of image covered by the window would be most effective but that would be prohibitively slow and computationally too costly, hence I just perform histogram equalization on the patch of the image we are searching over, bounded by ystart:ystop.
 

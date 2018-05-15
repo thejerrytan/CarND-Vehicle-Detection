@@ -195,6 +195,7 @@ Here is a comparision grid showing sliding windows results, heatmap after thresh
 
 ![alt text][heatmap_before_after]
 
+In order to smooth the bounding boxes from frame to frame and prevent jittery effects - false positives appearing for a single frame and disappearing next, I implemented a time-averaged heatmap over 5 frames, which I then use for labelling.
 
 ---
 

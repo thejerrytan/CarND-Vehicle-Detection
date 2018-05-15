@@ -51,6 +51,13 @@ The goals / steps of this project are the following:
 [sliding_small_windows_test5]: ./output_images/sliding_small_windows_test5.jpg
 [sliding_small_windows_test6]: ./output_images/sliding_small_windows_test6.jpg
 [spatial_bining_comparision]: ./output_images/spatial_bining_comparision.png
+[sliding_windows_combined_test1]: ./output_images/sliding_windows_combined_test1.jpg
+[sliding_windows_combined_test2]: ./output_images/sliding_windows_combined_test2.jpg
+[sliding_windows_combined_test3]: ./output_images/sliding_windows_combined_test3.jpg
+[sliding_windows_combined_test4]: ./output_images/sliding_windows_combined_test4.jpg
+[sliding_windows_combined_test5]: ./output_images/sliding_windows_combined_test5.jpg
+[sliding_windows_combined_test6]: ./output_images/sliding_windows_combined_test6.jpg
+[sliding_windows_comparision]: ./output_images/sliding_windows_comparision.png
 
 ## [Rubric](https://review.udacity.com/#!/rubrics/513/view) Points
 ### Here I will consider the rubric points individually and describe how I addressed each point in my implementation.  
@@ -75,18 +82,20 @@ I started by reading in all the `vehicle` and `non-vehicle` images.  Here is an 
 
 I then explored different color spaces and different `skimage.hog()` parameters (`orientations`, `pixels_per_cell`, and `cells_per_block`).  I grabbed random images from each of the two classes and displayed them to get a feel for what the `skimage.hog()` output looks like.
 
-Here is an example where I varied the color space -> `RGB`, `LUV`, `YCrCb`, `HLS`, `YUV` while keeping the HOG parameters of `orientations=8`, `pixels_per_cell=(8, 8)` and `cells_per_block=(2, 2)` constant:
+Here is an example where I varied the color space -> `RGB`, `LUV`, `YCrCb`, `HLS`, `YUV` while keeping the HOG parameters of `orientations=8`, `pixels_per_cell=(16, 16)` and `cells_per_block=(2, 2)` constant:
 
 ![alt text][hog_colorspace_comparision]
 
 #### 2. Explain how you settled on your final choice of HOG parameters.
 
-By comparing the output of the HOG for car and non-car in the different colorspaces, we can see that the greatest contrast happens at the S and V channel of the HSV colorspace, hence I decided on these parameters for HOG
+By comparing the output of the HOG for car and non-car in the different colorspaces, we can see that the greatest contrast happens at the S and V channel of the HSV colorspace. I tried pix_per_cell = 8 and 16 and realized there is no major difference in classification accuracy between the two but using 16 offers a tremendous speedup in training and inference time.
+
+Hence I decided on these parameters for HOG.
 
 ```python
 colorspace = 'HSV' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb, to be used for HOG
 orient = 9
-pix_per_cell = 8
+pix_per_cell = 16
 cell_per_block = 2
 hog_channel = "ALL" # Can be 0, 1, 2, or "ALL"
 ```
@@ -101,9 +110,7 @@ I trained a linear SVM with C = 0.1 using gridSearch over kernel = (linear, rbf)
 
 The code is in cell 11, where I used the find_cars() code given in the lesson to compute all hog features for the entire image once and then extract the relevant patches via sub-sampling with sliding window.
 
-I tried out different values of scale, cell_per_block and found out that scale of 1.5 and cell_per_block of 2 works best empirically.
-
-I implemented multi-scale search with 3 window sizes - small (32x32), medium (64x64), large(96,96). I started with the original size (64x64) which also happens to be the size which we train our SVM with, halve it to arrive at small scale for cars near the horizon, doubled it but realized the resulting size is too big, hence scaled it at 1.5 to arrive at (96x96). These numbers are also divisible by 8, which allows me to keep the HOG feature vector length constant by scaling pix_per_cell in the same direction as well, keeping number of cells per block constant at 8. 
+I tried out different values of scale, cell_per_block and found that more overlap works better for vehicle detection but it comes with longer processing time. Eventually, I implemented multi-scale search with 3 scales - small 1, medium 1.5, large 2.0 and cell_per_block of 2.
 
 #### 2. Show some examples of test images to demonstrate how your pipeline is working.  What did you do to optimize the performance of your classifier?
 
@@ -122,6 +129,8 @@ I realized majority of the false positives were coming from shadows or dimly lit
 Another optimization i did was to apply histogram equalization on the image. The code is in cell 4, function equalize_hist() under heading "Preprocessing". Since the SVM does not perform well on dimly lit images as the features of the image are not discernible, we can use histogram equalization to increase contrast and bring out the shapes, edges, etc. that will help the SVM make its decision. Performing this technique on the patch of image covered by the window would be most effective but that would be prohibitively slow and computationally too costly, hence I just perform histogram equalization on the patch of the image we are searching over, bounded by ystart:ystop.
 
 Ultimately I searched on 3 scales using HSV 3-channel HOG features plus spatially binned color and histograms of color in RGB colorspace in the feature vector, which provided a nice result.  Here are some example images at large, medium, small window sizes, tried on the 6 test images provided:
+
+Notice that the large windows did not have any true positive detections? That is because my choice of ystart:ystop for the large windows places all the vehicles in the test images out of the search boundary.
 
 ![alt text][sliding_large_windows_test1]
 ![alt text][sliding_large_windows_test2]
@@ -155,14 +164,14 @@ I recorded the positions of positive detections in each frame of the video.  Fro
 
 Here's an example result showing the heatmap from a series of frames of video, the result of `scipy.ndimage.measurements.label()` and the bounding boxes then overlaid on the last frame of video:
 
-### Here are six frames and their corresponding heatmaps:
+### Here are six frames and their corresponding combined bounding boxes:
 
-![alt text][heatmap_test1]
-![alt text][heatmap_test2]
-![alt text][heatmap_test3]
-![alt text][heatmap_test4]
-![alt text][heatmap_test5]
-![alt text][heatmap_test6]
+![alt text][sliding_windows_combined_test1]
+![alt text][sliding_windows_combined_test2]
+![alt text][sliding_windows_combined_test3]
+![alt text][sliding_windows_combined_test4]
+![alt text][sliding_windows_combined_test5]
+![alt text][sliding_windows_combined_test6]
 
 ### Here is the output of `scipy.ndimage.measurements.label()` on the integrated heatmap from all six frames:
 ![alt text][heatmap_test1]
@@ -198,3 +207,5 @@ For some reason, the SVM wrongly classifies guardrails as car occasionally. To m
 Pipeline is likely to fail in vehicle overtaking situations where the vehicle is overtaking on the immediate left/right lane as the size of the vehicle may be too big for our sliding window techinque currently.
 
 Pipeline is also likely to fail in vehicle occulsion scenarios, where 2 or more vehicles are hiding / overlapping each other from the perspective of the camera. Since they are positively identified in the same u,v coordinates in the heatmap, there is no way of telling how many vehicles are in the same bounding box.
+
+Pipeline will likely fail in scenarios where the car has never appeared in the training set before, given various combinations of environment factors like car color, lighting, angle, orientation of the car, size and shape of the car, example white car on white background / brightly lit road.

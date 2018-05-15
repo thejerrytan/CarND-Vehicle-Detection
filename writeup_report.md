@@ -58,6 +58,8 @@ The goals / steps of this project are the following:
 [sliding_windows_combined_test5]: ./output_images/sliding_windows_combined_test5.jpg
 [sliding_windows_combined_test6]: ./output_images/sliding_windows_combined_test6.jpg
 [sliding_windows_comparision]: ./output_images/sliding_windows_comparision.png
+[sliding_windows_full_comparision]: ./output_images/sliding_windows_full_comparision.png
+[heatmap_before_after]: ./output_images/heatmap_before_after.png
 
 ## [Rubric](https://review.udacity.com/#!/rubrics/513/view) Points
 ### Here I will consider the rubric points individually and describe how I addressed each point in my implementation.  
@@ -110,7 +112,32 @@ I trained a linear SVM with C = 0.1 using gridSearch over kernel = (linear, rbf)
 
 The code is in cell 11, where I used the find_cars() code given in the lesson to compute all hog features for the entire image once and then extract the relevant patches via sub-sampling with sliding window.
 
-I tried out different values of scale, cell_per_block and found that more overlap works better for vehicle detection but it comes with longer processing time. Eventually, I implemented multi-scale search with 3 scales - small 1, medium 1.5, large 2.0 and cell_per_block of 2.
+I tried out different values of scale, cell_per_block and found that more overlap works better for vehicle detection but it comes with longer processing time. Here are the values of scale, ystart, ystop that i tried:
+
+```python
+scales = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0]
+ystarts = [380, 380, 380, 380, 380, 400, 400, 400, 400, 400, 400]
+ystops = [480, 500, 520, 520, 580, 580, 620, 620, 680, 680, 680]
+colors = [(255,0,0), (255,255,0), (0,255,0), (0,255,255), (255,0,255), (128,0,128), (0,128,128), (128,128,0), (0,0,128), (128,0,0), (128,128,128)]
+```
+
+The image below shows the positions of all the windows. Each subplot is labelled as such: scale ystart ystop.
+
+![alt text][sliding_windows_full_comparision]
+
+
+The below image shows a comparision of how sliding windows work at each scale, ystart, ystop for each of the 6 test images.
+
+![alt text][sliding_windows_comparision]
+
+The final scale, ystart, ystop I decided on is given below:
+
+```python
+scales = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8]
+ystarts = [380, 380, 380, 380, 380, 400, 400, 400, 400]
+ystops = [480, 500, 520, 520, 580, 580, 620, 620, 680]
+colors = [(255,0,0), (255,255,0), (0,255,0), (0,255,255), (255,0,255), (128,0,128), (0,128,128), (128,128,0), (0,0,128)]
+```
 
 #### 2. Show some examples of test images to demonstrate how your pipeline is working.  What did you do to optimize the performance of your classifier?
 
@@ -128,9 +155,9 @@ I realized majority of the false positives were coming from shadows or dimly lit
 
 Another optimization i did was to apply histogram equalization on the image. The code is in cell 4, function equalize_hist() under heading "Preprocessing". Since the SVM does not perform well on dimly lit images as the features of the image are not discernible, we can use histogram equalization to increase contrast and bring out the shapes, edges, etc. that will help the SVM make its decision. Performing this technique on the patch of image covered by the window would be most effective but that would be prohibitively slow and computationally too costly, hence I just perform histogram equalization on the patch of the image we are searching over, bounded by ystart:ystop.
 
-Ultimately I searched on 3 scales using HSV 3-channel HOG features plus spatially binned color and histograms of color in RGB colorspace in the feature vector, which provided a nice result.  Here are some example images at large, medium, small window sizes, tried on the 6 test images provided:
+I trained a SVC without spatial bining and color histogram features and noticed that the classification accuracy does not differ much, but the training and inference speed up significantly. Hence, I optimized the pipeline by using only HOG features.
 
-Notice that the large windows did not have any true positive detections? That is because my choice of ystart:ystop for the large windows places all the vehicles in the test images out of the search boundary.
+Ultimately I searched on 8 scales using HSV 3-channel HOG features which provided a nice result. Here are some example images at different scales - large (1.6), medium (1.5), small sizes (1.2), tried on the 6 test images provided:
 
 ![alt text][sliding_large_windows_test1]
 ![alt text][sliding_large_windows_test2]
@@ -150,44 +177,23 @@ Notice that the large windows did not have any true positive detections? That is
 ![alt text][sliding_small_windows_test4]
 ![alt text][sliding_small_windows_test5]
 ![alt text][sliding_small_windows_test6]
+
+
 ---
 
 ### Video Implementation
 
 #### 1. Provide a link to your final video output.  Your pipeline should perform reasonably well on the entire project video (somewhat wobbly or unstable bounding boxes are ok as long as you are identifying the vehicles most of the time with minimal false positives.)
-Here's a [link to my video result](./project_video.mp4)
+Here's a [link to my video result](./project_video_out.mp4)
 
 
 #### 2. Describe how (and identify where in your code) you implemented some kind of filter for false positives and some method for combining overlapping bounding boxes.
 
-I recorded the positions of positive detections in each frame of the video.  From the positive detections I created a heatmap and then thresholded that map to identify vehicle positions.  I then used `scipy.ndimage.measurements.label()` to identify individual blobs in the heatmap.  I then assumed each blob corresponded to a vehicle.  I constructed bounding boxes to cover the area of each blob detected.  
+I recorded the positions of positive detections in each frame of the video.  From the positive detections I created a heatmap and then thresholded that map to identify vehicle positions.  I then used `scipy.ndimage.measurements.label()` to identify individual blobs in the heatmap.  I then assumed each blob corresponded to a vehicle. I constructed bounding boxes to cover the area of each blob detected. To prevent small bounding boxes from polluting the final video, I added in a filter to remove bounding boxes smaller than 32 pixels in x and y direction.
 
-Here's an example result showing the heatmap from a series of frames of video, the result of `scipy.ndimage.measurements.label()` and the bounding boxes then overlaid on the last frame of video:
+Here is a comparision grid showing sliding windows results, heatmap after thresholding and final bounding boxes using `scipy.ndimage.measurements.label()`.
 
-### Here are six frames and their corresponding combined bounding boxes:
-
-![alt text][sliding_windows_combined_test1]
-![alt text][sliding_windows_combined_test2]
-![alt text][sliding_windows_combined_test3]
-![alt text][sliding_windows_combined_test4]
-![alt text][sliding_windows_combined_test5]
-![alt text][sliding_windows_combined_test6]
-
-### Here is the output of `scipy.ndimage.measurements.label()` on the integrated heatmap from all six frames:
-![alt text][heatmap_test1]
-![alt text][heatmap_test2]
-![alt text][heatmap_test3]
-![alt text][heatmap_test4]
-![alt text][heatmap_test5]
-![alt text][heatmap_test6]
-
-### Here the resulting bounding boxes are drawn onto the last frame in the series:
-![alt text][final_detected_cars_test1]
-![alt text][final_detected_cars_test2]
-![alt text][final_detected_cars_test3]
-![alt text][final_detected_cars_test4]
-![alt text][final_detected_cars_test5]
-![alt text][final_detected_cars_test6]
+![alt text][heatmap_before_after]
 
 
 ---
@@ -198,14 +204,14 @@ Here's an example result showing the heatmap from a series of frames of video, t
 
 Here I'll talk about the approach I took, what techniques I used, what worked and why, where the pipeline might fail and how I might improve it if I were going to pursue this project further.  
 
-I used data augmentation to help the SVM with images with low overall brightness. This proved to be quite helpful in reducing the false positives coming from shadows in the images as the SVM now has more training examples to learn from.
+I used data augmentation to help the SVM with images with low overall brightness. This proved to be quite helpful in reducing the false positives coming from shadows in the images as the SVM now has more training examples to learn from. However, given that time complexity of training SVM scales with square of sample size, once number of training samples rises above 8000 it generally takes too long to train and infer to be practical.
 
 I used histogram equalization on local patches of images and this proved to be effective in reducing false positives from shadows. This is because after histogram equalization, the contrast between a car and non-car image would be maximized - you can imagine them as support vectors near the decision hyperplane previously but are now pushed further away from the hyperplane.
-
-For some reason, the SVM wrongly classifies guardrails as car occasionally. To mitigate this, we can collect more training images of guardrail labelled as not-car.
 
 Pipeline is likely to fail in vehicle overtaking situations where the vehicle is overtaking on the immediate left/right lane as the size of the vehicle may be too big for our sliding window techinque currently.
 
 Pipeline is also likely to fail in vehicle occulsion scenarios, where 2 or more vehicles are hiding / overlapping each other from the perspective of the camera. Since they are positively identified in the same u,v coordinates in the heatmap, there is no way of telling how many vehicles are in the same bounding box.
 
 Pipeline will likely fail in scenarios where the car has never appeared in the training set before, given various combinations of environment factors like car color, lighting, angle, orientation of the car, size and shape of the car, example white car on white background / brightly lit road.
+
+A brute force search for multi-scale sliding windows is too slow for this method to work real time. We can work from the assumption that most vehicles we are tracking will not move much from frame to frame in order to inform our sliding window search. Once we have a high confidence location for bounding box, we can focus our search from that location in the next frame in order to track where the vehicle has moved next, with lesser windows needed as we move further away from high confidence bounding boxes.

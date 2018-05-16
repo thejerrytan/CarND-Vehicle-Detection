@@ -157,7 +157,7 @@ Another optimization i did was to apply histogram equalization on the image. The
 
 I trained a SVC without spatial bining and color histogram features and noticed that the classification accuracy does not differ much, but the training and inference speed up significantly. Hence, I optimized the pipeline by using only HOG features.
 
-Ultimately I searched on 8 scales using HSV 3-channel HOG features which provided a nice result. Here are some example images at different scales - large (1.6), medium (1.5), small sizes (1.2), tried on the 6 test images provided:
+Ultimately I searched on 6 scales using HSV 3-channel HOG features which provided a nice result. Here are some example images at different scales - large (1.6), medium (1.5), small sizes (1.2), tried on the 6 test images provided:
 
 ![alt text][sliding_large_windows_test1]
 ![alt text][sliding_large_windows_test2]

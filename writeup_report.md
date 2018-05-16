@@ -115,10 +115,10 @@ The code is in cell 11, where I used the find_cars() code given in the lesson to
 I tried out different values of scale, cell_per_block and found that more overlap works better for vehicle detection but it comes with longer processing time. Here are the values of scale, ystart, ystop that i tried:
 
 ```python
-scales = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0]
-ystarts = [380, 380, 380, 380, 380, 400, 400, 400, 400, 400, 400]
-ystops = [480, 500, 520, 520, 580, 580, 620, 620, 680, 680, 680]
-colors = [(255,0,0), (255,255,0), (0,255,0), (0,255,255), (255,0,255), (128,0,128), (0,128,128), (128,128,0), (0,0,128), (128,0,0), (128,128,128)]
+scales = [0.8, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0]
+ystarts = [380, 380, 380, 380, 380, 380, 400, 400, 400, 400, 400, 400]
+ystops = [540, 540, 540, 540, 580, 580, 580, 620, 620, 680, 680, 680]
+colors = [(128,0,128), (255,0,0), (255,255,0), (0,255,0), (0,255,255), (255,0,255), (128,0,128), (0,128,128), (128,128,0), (0,0,128), (128,0,0), (128,128,128)]
 ```
 
 The image below shows the positions of all the windows. Each subplot is labelled as such: scale ystart ystop.
@@ -133,10 +133,10 @@ The below image shows a comparision of how sliding windows work at each scale, y
 The final scale, ystart, ystop I decided on is given below:
 
 ```python
-scales = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8]
-ystarts = [380, 380, 380, 380, 380, 400, 400, 400, 400]
-ystops = [480, 500, 520, 520, 580, 580, 620, 620, 680]
-colors = [(255,0,0), (255,255,0), (0,255,0), (0,255,255), (255,0,255), (128,0,128), (0,128,128), (128,128,0), (0,0,128)]
+scales = [0.8, 1.0, 1.2, 1.4, 1.6, 1.8]
+ystarts = [380, 380, 380, 380, 400, 400]
+ystops = [540, 540, 540, 580, 620, 680]
+colors = [(128,0,128), (255,0,0), (0,255,0), (255,0,255), (128,128,0), (0,0,128)]
 ```
 
 #### 2. Show some examples of test images to demonstrate how your pipeline is working.  What did you do to optimize the performance of your classifier?
@@ -195,7 +195,7 @@ Here is a comparision grid showing sliding windows results, heatmap after thresh
 
 ![alt text][heatmap_before_after]
 
-In order to smooth the bounding boxes from frame to frame and prevent jittery effects - false positives appearing for a single frame and disappearing next, I implemented a time-averaged heatmap over 5 frames, which I then use for labelling.
+In order to smooth the bounding boxes from frame to frame and prevent jittery effects - false positives appearing for a single frame and disappearing next, I pass the heatmap over last 15 frames through a median filter to remove outliers, which I then use for labelling.
 
 ---
 

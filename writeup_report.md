@@ -216,3 +216,42 @@ Pipeline is also likely to fail in vehicle occulsion scenarios, where 2 or more 
 Pipeline will likely fail in scenarios where the car has never appeared in the training set before, given various combinations of environment factors like car color, lighting, angle, orientation of the car, size and shape of the car, example white car on white background / brightly lit road.
 
 A brute force search for multi-scale sliding windows is too slow for this method to work real time. We can work from the assumption that most vehicles we are tracking will not move much from frame to frame in order to inform our sliding window search. Once we have a high confidence location for bounding box, we can focus our search from that location in the next frame in order to track where the vehicle has moved next, with lesser windows needed as we move further away from high confidence bounding boxes.
+
+
+### Modifications after first submission
+
+As the original code is getting too complicated, I decided to redo the code in a new pipeline called vehicle_detection.ipynb.
+
+I implemented hard mining to get the SVC classifier to work better on false positives - the guardrails, parts of the yellow lane etc.
+
+Here is my final setup:
+- I used spatial_binning with 16x16 size
+- HSV colorspace histogram with 32 bins
+- HSV HOG with 9 orientations, 2 cells_per_block and 16 pixels per cell
+- LinearSVC with C = 10
+
+What helped in the end was setting the right scales, ystart and ystop. For example, a scale of 0.8 proved to be really good at capturing the small white car in the video from t=26 to t=30, but it was not enough as it would be filtered out by thresholding. Thus, I repeated sliding windows at 0.8 again but with a slight variation in ystart so that it would capture a different patch of the image. Varying the cells_per_step proved to be helpful also in detecting small cars. For cars that are closer to the horizon, a larger step would mean the next step would skip over a large part of the car. The weak signal would get filtered out by thresholding step eventually. Hence, I set cells_per_step for the small scales to be 1 to have the highest possible overlap in order to get strong signals for small cars near the horizon. However, that would greatly increase the number of windows to process, hence I only did that for small scales, and cells_per_step = 2 for larger scales nearer to the camera.
+
+Here are the final parameters
+
+```python
+# Final params
+ystarts = [360,380,390,380,360,400,400,440,440]
+ystops = [440,460,470,480,480,580,656,656,656]
+scales = [0.8, 0.8, 0.8, 1.0, 1.0, 1.5, 2.0, 2.5, 3.0]
+cells_per_steps = [2,2,2,2,2,1,1,1,1]
+pix_per_cell = 16
+cell_per_block = 2
+spatial_size = (16,16)
+orient = 9
+hist_bins = 32
+heatmap_threshold = 6
+FRAMES_TO_SMOOTH = 15
+# Global heatmap
+heatmap = np.zeros((720, 1280, FRAMES_TO_SMOOTH))
+frame_count = 0
+min_x_bbox = 32
+min_y_bbox = 32
+```
+
+I increased number of past frames to apply median filtering over heatmap to 15, which greatly reduces frame-to-frame jittering and random bounding boxes appearing for 1 frame and disappearing the next.

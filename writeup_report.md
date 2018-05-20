@@ -236,16 +236,16 @@ Here are the final parameters
 
 ```python
 # Final params
-ystarts = [360,380,390,380,360,400,400,440,440]
-ystops = [440,460,470,480,480,580,656,656,656]
-scales = [0.8, 0.8, 0.8, 1.0, 1.0, 1.5, 2.0, 2.5, 3.0]
-cells_per_steps = [2,2,2,2,2,1,1,1,1]
+ystarts = [360,380,390,380,360,400]
+ystops = [440,460,470,480,480,580]
+scales = [0.8, 0.8, 0.8, 1.0, 1.0, 1.5]
+cells_per_steps = [2,2,2,2,2,1]
 pix_per_cell = 16
 cell_per_block = 2
 spatial_size = (16,16)
 orient = 9
 hist_bins = 32
-heatmap_threshold = 6
+heatmap_threshold = 4
 FRAMES_TO_SMOOTH = 15
 # Global heatmap
 heatmap = np.zeros((720, 1280, FRAMES_TO_SMOOTH))
